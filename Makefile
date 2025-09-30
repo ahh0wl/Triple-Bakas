@@ -43,4 +43,7 @@ fclean: clean
 # Ricompila tutto
 re: fclean all
 
+run: $(NAME)
+	./$(NAME)
+	
 .PHONY: all clean fclean re
