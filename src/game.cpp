@@ -2,6 +2,10 @@
 #include "draw.h"
 #include <SFML/Graphics.hpp>
 #include <SFML/Audio.hpp>
+#include <sstream>
+#define PERFECT 30
+#define OK 50
+#define LATE 100
 
 using namespace std;
 
@@ -13,9 +17,17 @@ void Game::loadBeatmap(const string& filename) {
     }
 
     int time;
+    int lasts;
     char key;
-    while (file >> time >> key) {
-        notes.emplace_back(time, key);
+    string line;
+    while (getline(file, line)) {
+        istringstream iss(line);
+        if (iss >> time >> key){
+            if (iss >> lasts)
+                notes.emplace_back(time, key, lasts);
+            else
+                notes.emplace_back(time, key, 0);
+        }
     }
     file.close();
 }
@@ -25,8 +37,7 @@ void Game::drawNotes(sf::RenderWindow& window, int elapsedMs, float noteSpeed) {
         if (nota.hit) continue;
 
         float y = TARGET_Y - (nota.time - elapsedMs) * noteSpeed;
-
-        if (y > -80.f && y < WINDOW_Y + 80.f) {
+        if (y > 0.f && y < WINDOW_Y + 80.f) {
             draw_notes(window, nota, y);
         }
     }
@@ -50,22 +61,42 @@ void Game::checkInput(int elapsedMs) {
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::F)) handleHit('f', elapsedMs);
 }
 
+void Game::checkHit(Nota& nota, int elapsedMs, int notaTime)
+{
+    int delta = abs(elapsedMs - notaTime);
+        if (delta <= PERFECT) {
+            nota.hit = true;
+            hitCount++;
+            cout << "[PERFECT] " << nota.key << " al tempo " << elapsedMs << "ms (delta " << delta << ")\n";
+            return;
+        } else if (delta <= OK){
+            nota.hit = true;
+            hitCount++;
+            cout << "[OK] " << nota.key << " al tempo " << elapsedMs << "ms (delta " << delta << ")\n";
+        } else if (delta <= LATE) {
+            nota.hit = true;
+            missCount++;
+            cout << "[TROPPO PRESTO] " << nota.key << " al tempo " << elapsedMs << "ms (delta " << delta << ")\n";
+        }
+        else {
+            nota.hit = true;
+            missCount++;
+            cout << "[TROPPO TARDI] " << nota.key << " al tempo " << elapsedMs << "ms (delta " << delta << ")\n";
+        }
+}
+
 void Game::handleHit(char key, int elapsedMs) {
     for (auto& nota : notes) {
         if (nota.hit || nota.key != key) continue;
+            checkHit(nota, elapsedMs, nota.time);
 
-        int delta = abs(elapsedMs - nota.time);
-
-        if (delta <= 30) {
-            nota.hit = true;
-            hitCount++;
-            cout << "[PERFECT] " << key << " al tempo " << elapsedMs << "ms (delta " << delta << ")\n";
-            return;
-        } else if (delta <= 50){
-            nota.hit = true;
-            hitCount++;
-            cout << "[OK] " << key << " al tempo " << elapsedMs << "ms (delta " << delta << ")\n";
-        }
+        /*sf::Event lastEvent;
+        if (nota.lasts){
+            while ((window.pollEvent(lastEvent) == sf::Keyboard::isKeyPressed(sf::Keyboard::A)) && elapsedMs <= nota.time + nota.lasts){
+                if (window.pollEvent(lastEvent) == sf::Keyboard::isKeyReleased(sf::Keyboard::A))
+                checkHit(nota, elapsedMs, nota.time + nota.lasts)
+            }
+        }*/
     }
 }
 

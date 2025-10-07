@@ -30,7 +30,7 @@ void draw_notes(sf::RenderWindow& window, Nota nota, float y)
         case 's': note.setPosition(300.f, y); break;
         case 'd': note.setPosition(500.f, y); break;
         case 'f': note.setPosition(700.f, y); break;
-        default: note.setPosition(500.f, y); break;
+        default: note.setPosition(10.f, y); break;
     }
     // cerchio centrale
     sf::CircleShape center(5.f);

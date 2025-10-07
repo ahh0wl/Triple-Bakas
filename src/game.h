@@ -25,6 +25,7 @@ private:
     void updateNotes(int elapsedMs);
     void checkInput(int elapsedMs);
     void handleHit(char key, int elapsedMs);
+    void checkHit(Nota& nota, int elapsedMS, int notaTime);
 
 public:
     void loadBeatmap(const std::string& filename);
