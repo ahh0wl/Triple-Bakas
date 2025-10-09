@@ -11,7 +11,7 @@ struct Nota {
     bool hit;        // se è stata colpita o no
     bool hold;
 
-    Nota(int t, int k, char l) : time(t), key(k), lasts(l), hit(false), hold(false) {}
+    Nota(int t, char k, int l) : time(t), key(k), lasts(l), hit(false), hold(false) {}
 };
 
 

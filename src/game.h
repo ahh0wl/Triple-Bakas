@@ -21,11 +21,12 @@ private:
     int missCount = 0;        // numero di miss
 
     // Funzioni interne per organizzare il codice
-    void drawNotes(sf::RenderWindow& window, int elapsedMs, float noteSpeed);
+    void drawnotes(sf::RenderWindow& window, int elapsedMs, float noteSpeed);
     void updateNotes(int elapsedMs);
-    void checkInput(int elapsedMs);
-    void handleHit(char key, int elapsedMs);
-    void checkHit(Nota& nota, int elapsedMS, int notaTime);
+    void checkPress(int elapsedMs);
+    void checkRelease(int elapsedMs);
+    void handlePress(char key, int elapsedMs);
+    void handleRelease(char key, int elapsedMs);
 
 public:
     void loadBeatmap(const std::string& filename);

@@ -16,22 +16,38 @@ void draw_board(sf::RenderWindow& window, float targetY)
     }
 }
 
-void draw_notes(sf::RenderWindow& window, Nota nota, float y)
+float getXfromKey(char c)
+{
+    switch (c) {
+        case 'a': return 100; break;
+        case 's': return 300; break;
+        case 'd': return 500; break;
+        case 'f': return 700; break;
+        default: return 10; break;
+    }
+}
+
+void draw_trail(sf::RenderWindow& window, Nota nota, float yhead, float ytail)
+{
+    sf::RectangleShape line(sf::Vector2f(80., ytail - yhead));
+    line.setFillColor(sf::Color(56, 255, 226, 150));
+    line.setOrigin(40, 0);
+    line.setOutlineThickness(3.f);
+    line.setOutlineColor(sf::Color::White);
+    line.setPosition(getXfromKey(nota.key), yhead);
+    window.draw(line);
+}
+
+void draw_circle(sf::RenderWindow& window, Nota nota, float y)
 {
     // cerchio principale
     sf::CircleShape note(40.f);
-    note.setFillColor(sf::Color(56, 255, 226, 200));
+    note.setFillColor(sf::Color(56, 255, 226, 255));
     note.setOrigin(note.getRadius(), note.getRadius());
     note.setOutlineThickness(3.f);
     note.setOutlineColor(sf::Color::White);
-
-    switch (nota.key) {
-        case 'a': note.setPosition(100.f, y); break;
-        case 's': note.setPosition(300.f, y); break;
-        case 'd': note.setPosition(500.f, y); break;
-        case 'f': note.setPosition(700.f, y); break;
-        default: note.setPosition(10.f, y); break;
-    }
+    note.setPosition(getXfromKey(nota.key), y);
+ 
     // cerchio centrale
     sf::CircleShape center(5.f);
     center.setFillColor(sf::Color::White);
