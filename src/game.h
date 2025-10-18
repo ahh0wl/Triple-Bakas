@@ -16,6 +16,7 @@ using namespace std;
 
 class Game {
 private:
+    sf::Font font;
     std::vector<Nota> notes;        // tutte le note della beatmap
     bool keyHeld[4] = {false, false, false, false}; // mappa per tracciamento premute 0-a 1-b ecc
     int hitCount = 0;               // numero di hit
@@ -30,6 +31,9 @@ private:
     void check(char key, sf::Keyboard::Key sfKey, int elapsedMs);
 
 public:
+    bool loadFont(const std::string& filename) {
+        return font.loadFromFile(filename);
+    }
     void loadBeatmap(const std::string& filename);
     void run();
 };

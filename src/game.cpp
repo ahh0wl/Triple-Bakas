@@ -16,7 +16,6 @@ void Game::loadBeatmap(const string& filename) {
         cerr << "Errore: impossibile aprire la beatmap " << filename << endl;
         return;
     }
-
     int time, lasts;
     char key;
     string line;
@@ -30,9 +29,11 @@ void Game::loadBeatmap(const string& filename) {
     file.close();
 }
 
+
 void Game::drawnotes(sf::RenderWindow& window, int elapsedMs, float noteSpeed) {
     for (auto& nota : notes) {
-        if (nota.hit && !nota.hold) continue;
+        if (!nota.missed)
+            if ((nota.hit && !nota.hold)) continue;
 
         float yhead = TARGET_Y - (nota.time - elapsedMs) * noteSpeed;
         float ytail;
@@ -40,7 +41,7 @@ void Game::drawnotes(sf::RenderWindow& window, int elapsedMs, float noteSpeed) {
             ytail = TARGET_Y - ((nota.time + nota.lasts) - elapsedMs) * noteSpeed;
         else
             ytail = yhead;
-        if (yhead > 0.f || ytail < WINDOW_Y + 80.f) {
+        if (yhead > 0.f || ytail < WINDOW_Y + 80.) {
             if (!nota.lasts) 
             {
                 draw_circle(window, nota, yhead);
@@ -61,7 +62,8 @@ void Game::updateNotes(int elapsedMs) {
         if (nota.hold) continue;
 
         // se è passata senza premere
-        if (elapsedMs > nota.time + nota.lasts + 200 && !nota.hold) {
+        if (elapsedMs > nota.time + nota.lasts + 400 && !nota.hold) {
+            nota.missed = true;
             nota.hit = true;
             missCount++;
             cout << "[MISS] " << nota.key << " non colpita" << endl;
@@ -77,20 +79,22 @@ void Game::handlePress(char key, int elapsedMs) {
         int delta = elapsedMs - nota.time;
 
         // dentro la finestra di hit
-        if (abs (delta) <= 200)
+        if (abs (delta) <= LATE)
         {
-            nota.missed = true;
-            if (abs(delta) <= 50) {
-                if (nota.lasts) {
+            if (abs(delta) <= OK) {
+                if (nota.lasts && !nota.missed) {
                     nota.hold = true;
+                    nota.missed = false;
                     cout << "[HOLD START] " << key << " premuto a " << elapsedMs << "ms" << endl;
-                } else {
+                } else if(!nota.missed){
                     nota.hit = true;
                     hitCount++;
                     cout << "[HIT] " << key << " a " << elapsedMs << "ms" << endl;
                 }
                 break;
             }
+            if (!nota.hold)
+            nota.missed = true;
         }
     }
 }
@@ -116,11 +120,13 @@ void Game::handleRelease(char key, int elapsedMs) {
         }
         else if (delta < -OK) {
             missCount++;
+            nota.missed = true;
             cout << "[HOLD EARLY] " << key << " rilasciato troppo presto (" << elapsedMs 
                  << "ms, delta " << delta << ")" << endl;
         }
         else if (delta > OK) {
             missCount++;
+            nota.missed = true;
             cout << "[HOLD LATE] " << key << " rilasciato troppo tardi (" << elapsedMs 
                  << "ms, delta " << delta << ")" << endl;
         }
@@ -180,7 +186,7 @@ void Game::run() {
         checkPress(elapsedMs);
 
         window.clear(sf::Color::Black);
-        draw_board(window, TARGET_Y);
+        draw_board(window, font, TARGET_Y);
         drawnotes(window, elapsedMs, noteSpeed);
         window.display();
     }
