@@ -16,14 +16,14 @@ void draw_board(sf::RenderWindow& window, float targetY)
     }
 }
 
-float getXfromKey(char c)
+int getIfromKey(char c)
 {
     switch (c) {
-        case 'a': return 100; break;
-        case 's': return 300; break;
-        case 'd': return 500; break;
-        case 'f': return 700; break;
-        default: return 10; break;
+        case 'a': return 0; break;
+        case 's': return 1; break;
+        case 'd': return 2; break;
+        case 'f': return 3; break;
+        default: return 4; break;
     }
 }
 
@@ -34,7 +34,7 @@ void draw_trail(sf::RenderWindow& window, Nota nota, float yhead, float ytail)
     line.setOrigin(40, 0);
     line.setOutlineThickness(3.f);
     line.setOutlineColor(sf::Color::White);
-    line.setPosition(getXfromKey(nota.key), yhead);
+    line.setPosition(100 + getIfromKey(nota.key) * 200, yhead);
     window.draw(line);
 }
 
@@ -46,7 +46,7 @@ void draw_circle(sf::RenderWindow& window, Nota nota, float y)
     note.setOrigin(note.getRadius(), note.getRadius());
     note.setOutlineThickness(3.f);
     note.setOutlineColor(sf::Color::White);
-    note.setPosition(getXfromKey(nota.key), y);
+    note.setPosition(100 + getIfromKey(nota.key) * 200, y);
  
     // cerchio centrale
     sf::CircleShape center(5.f);

@@ -10,8 +10,9 @@ struct Nota {
     int lasts;      //nota da tener premuto
     bool hit;        // se è stata colpita o no
     bool hold;
+    bool missed;
 
-    Nota(int t, char k, int l) : time(t), key(k), lasts(l), hit(false), hold(false) {}
+    Nota(int t, char k, int l) : time(t), key(k), lasts(l), hit(false), hold(false), missed(false) {}
 };
 
 

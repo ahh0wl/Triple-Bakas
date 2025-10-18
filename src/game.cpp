@@ -13,7 +13,7 @@ using namespace std;
 void Game::loadBeatmap(const string& filename) {
     ifstream file(filename);
     if (!file.is_open()) {
-        cerr << "Errore: impossibile aprire la beatmap " << filename << "\n";
+        cerr << "Errore: impossibile aprire la beatmap " << filename << endl;
         return;
     }
 
@@ -40,8 +40,8 @@ void Game::drawnotes(sf::RenderWindow& window, int elapsedMs, float noteSpeed) {
             ytail = TARGET_Y - ((nota.time + nota.lasts) - elapsedMs) * noteSpeed;
         else
             ytail = yhead;
-        if (yhead > 0.f && ytail < WINDOW_Y + 80.f) {
-            if (!nota.lasts)
+        if (yhead > 0.f || ytail < WINDOW_Y + 80.f) {
+            if (!nota.lasts) 
             {
                 draw_circle(window, nota, yhead);
             }
@@ -58,12 +58,13 @@ void Game::drawnotes(sf::RenderWindow& window, int elapsedMs, float noteSpeed) {
 void Game::updateNotes(int elapsedMs) {
     for (auto& nota : notes) {
         if (nota.hit) continue;
+        if (nota.hold) continue;
 
         // se è passata senza premere
-        if (elapsedMs > nota.time + 200 && !nota.hold) {
+        if (elapsedMs > nota.time + nota.lasts + 200 && !nota.hold) {
             nota.hit = true;
             missCount++;
-            cout << "[MISS] " << nota.key << " non colpita.\n";
+            cout << "[MISS] " << nota.key << " non colpita" << endl;
         }
     }
 }
@@ -76,16 +77,20 @@ void Game::handlePress(char key, int elapsedMs) {
         int delta = elapsedMs - nota.time;
 
         // dentro la finestra di hit
-        if (abs(delta) <= 200) {
-            if (nota.lasts) {
-                nota.hold = true;
-                cout << "[HOLD START] " << key << " premuto a " << elapsedMs << "ms\n";
-            } else {
-                nota.hit = true;
-                hitCount++;
-                cout << "[HIT] " << key << " a " << elapsedMs << "ms\n";
+        if (abs (delta) <= 200)
+        {
+            nota.missed = true;
+            if (abs(delta) <= 50) {
+                if (nota.lasts) {
+                    nota.hold = true;
+                    cout << "[HOLD START] " << key << " premuto a " << elapsedMs << "ms" << endl;
+                } else {
+                    nota.hit = true;
+                    hitCount++;
+                    cout << "[HIT] " << key << " a " << elapsedMs << "ms" << endl;
+                }
+                break;
             }
-            break;
         }
     }
 }
@@ -100,58 +105,58 @@ void Game::handleRelease(char key, int elapsedMs) {
         int delta = elapsedMs - releaseTime;
 
         if (abs(delta) <= PERFECT) {
-            nota.hit = true;
-            nota.hold = false;
             hitCount++;
             cout << "[HOLD PERFECT] " << key << " rilasciato perfettamente (" << elapsedMs 
-                 << "ms, delta " << delta << ")\n";
+                 << "ms, delta " << delta << ")" << endl;
         }
         else if (abs(delta) <= OK) {
-            nota.hit = true;
-            nota.hold = false;
             hitCount++;
             cout << "[HOLD OK] " << key << " rilasciato quasi giusto (" << elapsedMs 
-                 << "ms, delta " << delta << ")\n";
+                 << "ms, delta " << delta << ")" << endl;
         }
         else if (delta < -OK) {
-            nota.hit = true;
-            nota.hold = false;
             missCount++;
             cout << "[HOLD EARLY] " << key << " rilasciato troppo presto (" << elapsedMs 
-                 << "ms, delta " << delta << ")\n";
+                 << "ms, delta " << delta << ")" << endl;
         }
         else if (delta > OK) {
-            nota.hit = true;
-            nota.hold = false;
             missCount++;
             cout << "[HOLD LATE] " << key << " rilasciato troppo tardi (" << elapsedMs 
-                 << "ms, delta " << delta << ")\n";
+                 << "ms, delta " << delta << ")" << endl;
         }
-
+        nota.hit = true;
+        nota.hold = false;
         break;
     }
 }
 
-void Game::checkPress(int elapsedMs) {
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::A)) handlePress('a', elapsedMs);
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::S)) handlePress('s', elapsedMs);
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::D)) handlePress('d', elapsedMs);
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::F)) handlePress('f', elapsedMs);
+void Game::check(char key, sf::Keyboard::Key sfKey, int elapsedMs)
+{
+    bool pressed = sf::Keyboard::isKeyPressed(sfKey);
+    int i = getIfromKey(key);
+    if (pressed) {
+        // appena premuto
+        keyHeld[i] = true;
+        handlePress(key, elapsedMs);
+    } else if (!pressed && keyHeld[i]) {
+        keyHeld[i] = false;
+        handleRelease(key, elapsedMs);
+    }
+
 }
 
-void Game::checkRelease(int elapsedMs) {
-    // controlla i rilasci
-    if (!sf::Keyboard::isKeyPressed(sf::Keyboard::A)) handleRelease('a', elapsedMs);
-    if (!sf::Keyboard::isKeyPressed(sf::Keyboard::S)) handleRelease('s', elapsedMs);
-    if (!sf::Keyboard::isKeyPressed(sf::Keyboard::D)) handleRelease('d', elapsedMs);
-    if (!sf::Keyboard::isKeyPressed(sf::Keyboard::F)) handleRelease('f', elapsedMs);
+void Game::checkPress(int elapsedMs) {
+    check('a', sf::Keyboard::A, elapsedMs);
+    check('s', sf::Keyboard::S, elapsedMs);
+    check('d', sf::Keyboard::D, elapsedMs);
+    check('f', sf::Keyboard::F, elapsedMs);
 }
 
 
 
 void Game::run() {
     if (notes.empty()) {
-        cout << "Nessuna nota caricata!\n";
+        cout << "Nessuna nota caricata!" << endl;
         return;
     }
 
@@ -173,7 +178,6 @@ void Game::run() {
 
         updateNotes(elapsedMs);
         checkPress(elapsedMs);
-        checkRelease(elapsedMs);
 
         window.clear(sf::Color::Black);
         draw_board(window, TARGET_Y);
