@@ -16,7 +16,7 @@ void draw_board(sf::RenderWindow& window, sf::Font& font, float targetY)
     }
     for (int i = 0; i < 4; i++){
         //cerchi target
-        sf::CircleShape target(45.f);
+        sf::CircleShape target(42.f);
         target.setOrigin(target.getRadius(), target.getRadius());
         target.setOutlineThickness(5.f);
         target.setFillColor(sf::Color(0, 0, 0, 255));
@@ -64,14 +64,28 @@ int getIfromKey(char c)
         default: return 4; break;
     }
 }
+void draw_timing(sf::RenderWindow& window, Nota nota, sf::Font& font, const string& str, sf::Color color)
+{
+    sf::Text text;
+    text.setFont(font);
+    int i = getIfromKey(nota.key);
+    text.setString(str);
+    text.setCharacterSize(30);                
+    text.setFillColor(color);
+    sf::FloatRect textRect = text.getLocalBounds();
+    text.setOrigin(textRect.left + textRect.width / 2.0f,
+                textRect.top + textRect.height / 2.0f);
+    text.setPosition(150. +  i * 200, TARGET_Y - 50);
+    window.draw(text);
+}
 
-void draw_trail(sf::RenderWindow& window, Nota nota, float yhead, float ytail)
+void draw_trail(sf::RenderWindow& window, Nota nota, float yhead, float ytail, sf::Color color)
 {
     sf::RectangleShape line(sf::Vector2f(80., ytail - yhead));
-    if (!nota.missed)
-        line.setFillColor(sf::Color(56, 255, 226, 150));
-    else
+    if (nota.missed)
         line.setFillColor(sf::Color(255, 0, 0, 150));
+    else
+        line.setFillColor(color);
     line.setOrigin(40, 0);
     line.setOutlineThickness(3.f);
     line.setOutlineColor(sf::Color::White);
