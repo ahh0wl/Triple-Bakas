@@ -6,9 +6,9 @@
 #include <iostream>
 using namespace std;
 
-#define PERFECT 30
-#define OK 50
-#define LATE 100
+#define PERFECT 20
+#define OK 40
+#define LATE 50
 
 void Game::loadBeatmap(const string& filename) {
     ifstream file(filename);
@@ -32,8 +32,9 @@ void Game::loadBeatmap(const string& filename) {
 
 void Game::drawnotes(sf::RenderWindow& window, int elapsedMs, float noteSpeed) {
     for (auto& nota : notes) {
-        if (!nota.missed)
-            if ((nota.hit && !nota.hold)) continue;
+        // le note PERFETTE, OK già risolte e non di tipo hold non vengono più ridisegnate
+        if ((nota.hit == HitResult::PERFECT_HIT || nota.hit == HitResult::OK_HIT) && !nota.lasts)
+            continue;
 
         float yhead = TARGET_Y - (nota.time - elapsedMs) * noteSpeed;
         float ytail;
@@ -41,21 +42,24 @@ void Game::drawnotes(sf::RenderWindow& window, int elapsedMs, float noteSpeed) {
             ytail = TARGET_Y - ((nota.time + nota.lasts) - elapsedMs) * noteSpeed;
         else
             ytail = yhead;
-        if (yhead > 0.f || ytail < WINDOW_Y + 80.) {
-            if (!nota.lasts) 
-            {
-                draw_circle(window, nota, yhead);
-            }
-            else
-            {
-                if(nota.hold)
-                {
-                    draw_trail(window, nota, yhead, TARGET_Y, sf::Color (56, 255, 56, 150));
-                    draw_circle(window, nota, TARGET_Y);
+
+        // disegna solo se la nota è visibile nel range schermo ±100px
+        if (yhead > -100.f && ytail < WINDOW_Y + 100.f) {
+            // disegna anche le note "mancate" per un po' dopo il MISS
+            if (nota.hit == NOT_HIT || nota.hold || nota.hit == LATE_HIT || nota.hit == EARLY_HIT) {
+                if (!nota.lasts) {
+                    // nota singola
+                    draw_circle(window, nota, yhead);
+                } else {
+                    // nota lunga
+                    draw_trail(window, nota, yhead, ytail, sf::Color(56, 255, 226, 150));
+                    draw_circle(window, nota, yhead);
+                    draw_circle(window, nota, ytail);
+                    if (nota.hold) {
+                        draw_trail(window, nota, yhead, TARGET_Y, sf::Color(56, 255, 56, 150));
+                        draw_circle(window, nota, TARGET_Y);
+                    }
                 }
-                draw_trail(window, nota, yhead, ytail, sf::Color(56, 255, 226, 150));
-                draw_circle(window, nota, yhead);
-                draw_circle(window, nota, ytail);
             }
         }
     }
@@ -63,43 +67,54 @@ void Game::drawnotes(sf::RenderWindow& window, int elapsedMs, float noteSpeed) {
 
 void Game::updateNotes(int elapsedMs, sf::RenderWindow& window) {
     for (auto& nota : notes) {
-        if (nota.hit || nota.hold) continue;
-        // se è passata senza premere
-        if (elapsedMs > nota.time + nota.lasts + 400 && !nota.hold) {
-            nota.missed = true;
-            nota.hit = true;
+        if (nota.hit != NOT_HIT && nota.hold == false)
+            continue;
+        // se è passata senza premere o tieni troppo premuto
+        if ((elapsedMs > nota.time + nota.lasts + LATE)) {
+            nota.hold = false;
+            nota.hit = LATE_HIT;
             missCount++;
             draw_timing(window, nota, font, "MISS!", sf::Color (255, 0, 0, 255));
-            cout << "[MISS] " << nota.key << " non colpita" << endl;
+            cout << "[MISS-LATE HOLD] " << nota.key << " non colpita" << endl;
         }
     }
 }
 
 void Game::handlePress(char key, int elapsedMs) {
     for (auto& nota : notes) {
-        if (nota.hit) continue;
+        if (nota.hit != NOT_HIT) continue;
         if (nota.key != key) continue;
 
         int delta = elapsedMs - nota.time;
+        if (abs(delta) > 200) continue;
 
-        // dentro la finestra di hit
-        if (abs (delta) <= LATE)
+        if (nota.hit == HitResult::NOT_HIT)
         {
-            if (abs(delta) <= OK) {
-                if (nota.lasts && !nota.missed) {
-                    nota.hold = true;
-                    nota.missed = false;
-                    cout << "[HOLD START] " << key << " premuto a " << elapsedMs << "ms" << endl;
-                } else if(!nota.missed){
-                    nota.hit = true;
+            if (delta < -LATE) {
+                nota.hit = HitResult::EARLY_HIT;
+                cout << "[EARLY] " << key << " premuto troppo presto (" << delta << "ms)" << endl;
+                missCount++;
+            } else if (abs(delta) <= PERFECT && abs(delta) >= -PERFECT) {
+                nota.hit = HitResult::PERFECT_HIT;
+                if (!nota.lasts)
                     hitCount++;
-                    cout << "[HIT] " << key << " a " << elapsedMs << "ms" << endl;
-                }
-                break;
+                cout << "[PERFECT] " << key << " a " << delta << "ms" << endl;
+            } else if (abs(delta) <= OK && abs(delta) >= -OK) {
+                nota.hit = HitResult::OK_HIT;
+                if (!nota.lasts)
+                    hitCount++;
+                cout << "[OK] " << key << " a " << delta << "ms" << endl;
+            } else {
+                nota.hit = HitResult::LATE_HIT;
+                missCount++;
+                cout << "[LATE] " << key << " premuto tardi (" << delta << "ms)" << endl;
             }
-            if (!nota.hold)
-            nota.missed = true;
         }
+        if (nota.lasts && (nota.hit == HitResult::OK_HIT || nota.hit == HitResult::PERFECT_HIT)) {
+            nota.hold = true;
+            cout << "[HOLD START] " << key << endl;
+        }
+        break;
     }
 }
 
@@ -107,34 +122,37 @@ void Game::handleRelease(char key, int elapsedMs) {
     for (auto& nota : notes) {
         if (!nota.hold) continue;        // non è in hold
         if (nota.key != key) continue;
-        if (nota.hit) continue;          // già completata
-
+        
         int releaseTime = nota.time + nota.lasts;
         int delta = elapsedMs - releaseTime;
-
-        if (abs(delta) <= PERFECT) {
-            hitCount++;
-            cout << "[HOLD PERFECT] " << key << " rilasciato perfettamente (" << elapsedMs 
-                 << "ms, delta " << delta << ")" << endl;
+        if (!nota.missed())
+        {
+            if (abs(delta) <= PERFECT) {
+                hitCount++;
+                nota.hit = HitResult::PERFECT_HIT;
+                cout << "[HOLD PERFECT] " << key << " rilasciato perfettamente (" << elapsedMs 
+                     << "ms, delta " << delta << ")" << endl;
+            }
+            else if (abs(delta) <= OK) {
+                hitCount++;
+                nota.hit = HitResult::OK_HIT;
+                cout << "[HOLD OK] " << key << " rilasciato quasi giusto (" << elapsedMs 
+                     << "ms, delta " << delta << ")" << endl;
+            }
+            else if (delta < -OK) {
+                missCount++;
+                nota.hit = HitResult::EARLY_HIT;
+                nota.hold = false;
+                cout << "[HOLD EARLY] " << key << " rilasciato troppo presto (" << elapsedMs 
+                     << "ms, delta " << delta << ")" << endl;
+            }
+            else if (delta > OK) {
+                missCount++;
+                nota.hit = HitResult::LATE_HIT;
+                cout << "[HOLD LATE] " << key << " rilasciato troppo tardi (" << elapsedMs 
+                     << "ms, delta " << delta << ")" << endl;
+            }
         }
-        else if (abs(delta) <= OK) {
-            hitCount++;
-            cout << "[HOLD OK] " << key << " rilasciato quasi giusto (" << elapsedMs 
-                 << "ms, delta " << delta << ")" << endl;
-        }
-        else if (delta < -OK) {
-            missCount++;
-            nota.missed = true;
-            cout << "[HOLD EARLY] " << key << " rilasciato troppo presto (" << elapsedMs 
-                 << "ms, delta " << delta << ")" << endl;
-        }
-        else if (delta > OK) {
-            missCount++;
-            nota.missed = true;
-            cout << "[HOLD LATE] " << key << " rilasciato troppo tardi (" << elapsedMs 
-                 << "ms, delta " << delta << ")" << endl;
-        }
-        nota.hit = true;
         nota.hold = false;
         break;
     }
@@ -174,7 +192,6 @@ void Game::run() {
     window.setFramerateLimit(60);
 
     sf::Clock clock;
-    const float noteSpeed = 0.5f;
 
     while (window.isOpen()) {
         sf::Event event;
@@ -191,7 +208,7 @@ void Game::run() {
 
         window.clear(sf::Color::Black);
         draw_board(window, font, TARGET_Y);
-        drawnotes(window, elapsedMs, noteSpeed);
+        drawnotes(window, elapsedMs, NOTE_SPEED);
         window.display();
     }
 

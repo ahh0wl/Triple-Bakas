@@ -82,7 +82,7 @@ void draw_timing(sf::RenderWindow& window, Nota nota, sf::Font& font, const stri
 void draw_trail(sf::RenderWindow& window, Nota nota, float yhead, float ytail, sf::Color color)
 {
     sf::RectangleShape line(sf::Vector2f(80., ytail - yhead));
-    if (nota.missed)
+    if (nota.missed())
         line.setFillColor(sf::Color(255, 0, 0, 150));
     else
         line.setFillColor(color);
@@ -97,7 +97,7 @@ void draw_circle(sf::RenderWindow& window, Nota nota, float y)
 {
     // cerchio principale
     sf::CircleShape note(40.f);
-    if (!nota.missed)
+    if (!nota.missed())
         note.setFillColor(sf::Color(56, 255, 226, 255));
     else
         note.setFillColor(sf::Color(255, 0, 0, 255));

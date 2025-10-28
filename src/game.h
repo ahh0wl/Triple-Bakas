@@ -11,6 +11,7 @@
 #define WINDOW_X 800.f
 #define WINDOW_Y 600.f
 #define TARGET_Y 500.f
+#define NOTE_SPEED 0.5f
 
 using namespace std;
 
