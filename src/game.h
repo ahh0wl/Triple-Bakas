@@ -25,7 +25,8 @@ private:
 
     // Funzioni interne per organizzare il codice
     void drawnotes(sf::RenderWindow& window, int elapsedMs, float noteSpeed);
-    void updateNotes(int elapsedMs, sf::RenderWindow& window);
+    void draw_timing(int elapsedMs, sf::RenderWindow& window);
+    void updateNotes(int elapsedMs);
     void checkPress(int elapsedMs);
     void handlePress(char key, int elapsedMs);
     void handleRelease(char key, int elapsedMs);

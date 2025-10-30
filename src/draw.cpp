@@ -9,7 +9,7 @@ void draw_board(sf::RenderWindow& window, sf::Font& font, float targetY)
 
     // colonne verticali
     for (int i = 1; i < 4; i++) {
-        sf::RectangleShape vline(sf::Vector2f(5.f, 600.f));
+        sf::RectangleShape vline(sf::Vector2f(5.f, WINDOW_Y));
         vline.setFillColor(sf::Color::White);
         vline.setPosition(i * 200.f, 0.f);
         window.draw(vline);
@@ -64,7 +64,7 @@ int getIfromKey(char c)
         default: return 4; break;
     }
 }
-void draw_timing(sf::RenderWindow& window, Nota nota, sf::Font& font, const string& str, sf::Color color)
+void timing_result(sf::RenderWindow& window, Nota nota, sf::Font& font, const string& str, sf::Color color)
 {
     sf::Text text;
     text.setFont(font);
@@ -75,7 +75,7 @@ void draw_timing(sf::RenderWindow& window, Nota nota, sf::Font& font, const stri
     sf::FloatRect textRect = text.getLocalBounds();
     text.setOrigin(textRect.left + textRect.width / 2.0f,
                 textRect.top + textRect.height / 2.0f);
-    text.setPosition(150. +  i * 200, TARGET_Y - 50);
+    text.setPosition(100. +  i * 200, TARGET_Y  - 100);
     window.draw(text);
 }
 

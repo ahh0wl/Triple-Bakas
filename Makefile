@@ -45,5 +45,7 @@ re: fclean all
 
 run: $(NAME)
 	./$(NAME)
+
+rerun: re run
 	
 .PHONY: all clean fclean re

@@ -65,16 +65,31 @@ void Game::drawnotes(sf::RenderWindow& window, int elapsedMs, float noteSpeed) {
     }
 }
 
-void Game::updateNotes(int elapsedMs, sf::RenderWindow& window) {
+void Game::draw_timing(int elapsedMs, sf::RenderWindow& window) {
+    for (auto& nota : notes) {
+        if (nota.hit == NOT_HIT)
+            continue;
+        if (nota.hit == EARLY_HIT && elapsedMs < nota.time + 500)
+            timing_result(window, nota, font, "EARLY!", sf::Color (255, 255, 0, 255));
+        else if (nota.hit == OK_HIT && elapsedMs < nota.time + nota.lasts + 500)
+            timing_result(window, nota, font, "OK!", sf::Color (26, 167, 255, 255));
+        else if (nota.hit == PERFECT_HIT && elapsedMs < nota.time + nota.lasts + 500)
+            timing_result(window, nota, font, "PERFECT!", sf::Color (204, 0, 204, 255));
+        else if (nota.hit == LATE_HIT && elapsedMs < nota.time + nota.lasts + 500)
+            timing_result(window, nota, font, "MISS!", sf::Color (255, 0, 0, 255));
+    }
+}
+
+void Game::updateNotes(int elapsedMs) {
     for (auto& nota : notes) {
         if (nota.hit != NOT_HIT && nota.hold == false)
             continue;
+        
         // se è passata senza premere o tieni troppo premuto
         if ((elapsedMs > nota.time + nota.lasts + LATE)) {
             nota.hold = false;
             nota.hit = LATE_HIT;
             missCount++;
-            draw_timing(window, nota, font, "MISS!", sf::Color (255, 0, 0, 255));
             cout << "[MISS-LATE HOLD] " << nota.key << " non colpita" << endl;
         }
     }
@@ -203,12 +218,13 @@ void Game::run() {
 
         int elapsedMs = clock.getElapsedTime().asMilliseconds();
 
-        updateNotes(elapsedMs, window);
         checkPress(elapsedMs);
+        updateNotes(elapsedMs);
 
         window.clear(sf::Color::Black);
         draw_board(window, font, TARGET_Y);
         drawnotes(window, elapsedMs, NOTE_SPEED);
+        draw_timing(elapsedMs, window);
         window.display();
     }
 
